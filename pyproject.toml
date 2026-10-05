@@ -1,0 +1,17 @@
+[project]
+name = "agentic-ai-lab"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Avelardo Gavide", email = "abeljose13@gmail.com" }
+]
+requires-python = ">=3.14.8"
+dependencies = [
+    "pydantic>=2.13.5",
+    "python-dotenv>=1.2.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
