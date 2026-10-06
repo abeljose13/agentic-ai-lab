@@ -1,21 +1,37 @@
 import os
 import time
 import concurrent.futures
+from langchain_openai import ChatOpenAI
 from typing import List, Optional, Any
 from dotenv import load_dotenv
+
+
+class _NeverRaisedError(Exception):
+    """Sentinela usada cuando un SDK no está instalado: nunca coincide en un except."""
+
 
 # Intentar importar las excepciones de Rate Limit específicas de cada SDK
 try:
     import openai
     OPENAI_RATE_LIMIT_ERR = openai.RateLimitError
 except ImportError:
-    OPENAI_RATE_LIMIT_ERR = Exception
+    openai = None
+    OPENAI_RATE_LIMIT_ERR = _NeverRaisedError
 
 try:
     import anthropic
     ANTHROPIC_RATE_LIMIT_ERR = anthropic.RateLimitError
 except ImportError:
-    ANTHROPIC_RATE_LIMIT_ERR = Exception
+    anthropic = None
+    ANTHROPIC_RATE_LIMIT_ERR = _NeverRaisedError
+
+# Errores que se consideran transitorios y por lo tanto reintentables
+_TRANSIENT_ERRORS = [ConnectionError, TimeoutError]
+if openai is not None:
+    _TRANSIENT_ERRORS += [openai.RateLimitError, openai.APIConnectionError, openai.APITimeoutError]
+if anthropic is not None:
+    _TRANSIENT_ERRORS += [anthropic.RateLimitError, anthropic.APIConnectionError, anthropic.APITimeoutError]
+TRANSIENT_ERRORS = tuple(_TRANSIENT_ERRORS)
 
 
 class LLMClient:
@@ -34,15 +50,14 @@ class LLMClient:
         """
         Ejecuta la función de llamada al LLM aplicando el patrón Backoff Exponencial
         ante errores de Rate Limit o errores de red.
+
+        Los errores no transitorios (validación, errores de programación, etc.)
+        se relanzan inmediatamente sin reintentar.
         """
         for intento in range(max_reintentos):
             try:
                 return call_fn(*args, **kwargs)
-            except (OPENAI_RATE_LIMIT_ERR, ANTHROPIC_RATE_LIMIT_ERR, Exception) as err:
-                # Si el error es de validación propia, se relanza inmediatamente
-                if isinstance(err, ValueError):
-                    raise err
-
+            except TRANSIENT_ERRORS as err:
                 # Si es el último intento, lanzar un error claro al usuario
                 if intento == max_reintentos - 1:
                     raise RuntimeError(f"Error persistente tras {max_reintentos} intentos con {self.provider}: {str(err)}") from err
@@ -50,6 +65,9 @@ class LLMClient:
                 espera = 2 ** intento  # Backoff exponencial: 1s, 2s, 4s...
                 print(f"[Rate Limit / Error en {self.provider}] Reintentando (intento {intento + 1}/{max_reintentos}) en {espera}s... Detalle: {err}")
                 time.sleep(espera)
+            except Exception:
+                # Errores no reintentables (ValueError, TypeError, etc.): propagar tal cual
+                raise
 
     def generate(self, prompt: str, system: Optional[str] = None, temperature: float = 0.7, max_tokens: int = 500) -> str:
         """
@@ -63,7 +81,7 @@ class LLMClient:
             "openai": self.call_openai,
             "anthropic": self.call_anthropic,
             "google": self.call_google,
-            "ollama": self.call_ollama,
+            "ollama": self.call_ollama_rest,
         }
 
         call_fn = providers_map.get(self.provider)
@@ -176,12 +194,15 @@ class LLMClient:
         )
         return response.text.strip()
 
-    def call_ollama(self, prompt: str, system: Optional[str], temperature: float, max_tokens: int) -> str:
+    def call_ollama_rest(self, prompt: str, system: Optional[str], temperature: float, max_tokens: int) -> str:
         """Llamada a servidor Ollama local mediante peticiones HTTP/REST."""
         import requests
 
-        host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-        model = os.environ.get("OLLAMA_MODEL", "llama3.2")
+        MAC_SERVER_IP = os.getenv("MAC_SERVER_IP", "192.168.1.14")
+        OLLAMA_PORT = os.getenv("OLLAMA_PORT", "11434")
+        OLLAMA_BASE_URL = f"http://{MAC_SERVER_IP}:{OLLAMA_PORT}"
+
+        model = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
 
         payload = {
             "model": model,
@@ -196,8 +217,41 @@ class LLMClient:
             payload["system"] = system
 
         print("Ejecutando llamada a Ollama")
-        response = requests.post(f"{host}/api/generate", json=payload, timeout=60)
+        response = requests.post(f"{OLLAMA_BASE_URL}/api/generate", json=payload, timeout=60)
         response.raise_for_status()
         data = response.json()
         return data.get("response", "").strip()
+
+    def call_ollama(self, prompt: str, system: Optional[str], temperature: float, max_tokens: int) -> str:
+        """Llamada a servidor Ollama local mediante langchain openai."""
+        MAC_SERVER_IP = os.getenv("MAC_SERVER_IP", "192.168.1.14")
+        OLLAMA_PORT = os.getenv("OLLAMA_PORT", "11434")
+        OLLAMA_BASE_URL = f"http://{MAC_SERVER_IP}:{OLLAMA_PORT}/v1"
+
+        model = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+
+        llm = self.get_client_llm(temperature, max_tokens, OLLAMA_BASE_URL, model)
+
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        print("Ejecutando llamada a Ollama")
+        response = llm.invoke(messages)
+
+        return response.content.strip()
+
+    def get_client_llm(self, temperature: float, max_tokens: int, ollama_url: str, model: str):
+        """ 
+        Crea un cliente para consumir un modelo en el servidor Ollama local. 
+        """
+        return ChatOpenAI(
+            base_url=ollama_url,
+            api_key="ollama",
+            model=model,
+            temperature=temperature,
+            top_p=0.9,
+            max_tokens=max_tokens
+        )
         
