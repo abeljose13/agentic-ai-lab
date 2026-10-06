@@ -25,12 +25,21 @@ except ImportError:
     anthropic = None
     ANTHROPIC_RATE_LIMIT_ERR = _NeverRaisedError
 
+try:
+    import groq
+    GROQ_RATE_LIMIT_ERR = groq.RateLimitError
+except ImportError:
+    groq = None
+    GROQ_RATE_LIMIT_ERR = _NeverRaisedError
+
 # Errores que se consideran transitorios y por lo tanto reintentables
 _TRANSIENT_ERRORS = [ConnectionError, TimeoutError]
 if openai is not None:
     _TRANSIENT_ERRORS += [openai.RateLimitError, openai.APIConnectionError, openai.APITimeoutError]
 if anthropic is not None:
     _TRANSIENT_ERRORS += [anthropic.RateLimitError, anthropic.APIConnectionError, anthropic.APITimeoutError]
+if groq is not None:
+    _TRANSIENT_ERRORS += [groq.RateLimitError, groq.APIConnectionError, groq.APITimeoutError]
 TRANSIENT_ERRORS = tuple(_TRANSIENT_ERRORS)
 
 
@@ -81,7 +90,8 @@ class LLMClient:
             "openai": self.call_openai,
             "anthropic": self.call_anthropic,
             "google": self.call_google,
-            "ollama": self.call_ollama_rest,
+            "ollama": self.call_ollama,
+            "groq": self.call_groq,
         }
 
         call_fn = providers_map.get(self.provider)
@@ -193,6 +203,30 @@ class LLMClient:
             config=config
         )
         return response.text.strip()
+
+    def call_groq(self, prompt: str, system: Optional[str], temperature: float, max_tokens: int) -> str:
+        """Llamada usando el SDK oficial de Groq."""
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("Falta la variable de entorno 'GROQ_API_KEY' para el proveedor Groq.")
+
+        import groq
+        client = groq.Groq(api_key=api_key)
+
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        model_name = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")
+        print("Ejecutando llamada a Groq")
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        return response.choices[0].message.content.strip()
 
     def call_ollama_rest(self, prompt: str, system: Optional[str], temperature: float, max_tokens: int) -> str:
         """Llamada a servidor Ollama local mediante peticiones HTTP/REST."""
