@@ -13,4 +13,4 @@ class LLMProvider(ABC):
         """Implementación por defecto: sirve para CUALQUIER proveedor, aunque no tenga
         soporte nativo de structured outputs. Un proveedor que sí lo tenga (ejemplo: Bedrock)
         puede sobreescribir este método con una versión más eficiente."""
-        return generate_structured_with_retries(self.generate, prompt, schema_model, system=system)
+        return generate_with_retries(self.generate, prompt, schema_model, system=system)
