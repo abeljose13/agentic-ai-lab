@@ -187,7 +187,10 @@ class LLMClient:
         from google import genai
         from google.genai import types
 
-        client = genai.Client(api_key=api_key)
+        client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(timeout=15000)
+        )
         
         config = types.GenerateContentConfig(
             temperature=temperature,
