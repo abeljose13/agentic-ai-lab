@@ -1,7 +1,4 @@
-from dotenv import load_dotenv
 from src.llm_client.service import classify, IntentClassifierModel
-
-load_dotenv()
 
 # 3 entradas de prueba
 test_cases = [

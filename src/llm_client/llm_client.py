@@ -3,7 +3,8 @@ import time
 import concurrent.futures
 from langchain_openai import ChatOpenAI
 from typing import List, Optional, Any
-from dotenv import load_dotenv
+
+from src.llm_client.config import get_provider_name
 
 
 class _NeverRaisedError(Exception):
@@ -45,8 +46,7 @@ TRANSIENT_ERRORS = tuple(_TRANSIENT_ERRORS)
 
 class LLMClient:
     def __init__(self):
-        load_dotenv()
-        self.provider = os.environ.get("LLM_PROVIDER", "google").lower()
+        self.provider = get_provider_name()
 
     def _validate_parameters(self, temperature: float, max_tokens: int) -> None:
         """Valida que los parámetros de generación estén en rangos válidos antes de llamar a los SDKs."""

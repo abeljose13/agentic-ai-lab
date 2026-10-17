@@ -1,7 +1,7 @@
-import os
 from typing import TypeVar
 from pydantic import BaseModel
 
+from src.llm_client.config import get_provider_name
 from src.llm_client.llm_provider import LLMProvider
 from src.llm_client.llm_client import LLMClient
 
@@ -62,7 +62,4 @@ def get_provider() -> LLMProvider:
         "groq": GroqProvider,
         "ollama": OllamaProvider,
     }
-    name = os.environ.get("LLM_PROVIDER", "google").lower()
-    if name not in providers:
-        raise ValueError(f"Unknown provider: '{name}'. Opciones: {list(providers.keys())}")
-    return providers[name]()
+    return providers[get_provider_name()]()
