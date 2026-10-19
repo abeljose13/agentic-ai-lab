@@ -5,20 +5,20 @@ from src.llm_client.providers import get_provider
 
 class IntentClassifierModel(BaseModel):
     """Modelo Pydantic para clasificar la intención de preguntas sobre documentación técnica."""
-    
+
     question_type: Literal[
-        "conceptual", 
-        "configuracion_instalacion", 
-        "resolucion_errores", 
-        "fuera_de_dominio"
+        "conceptual",
+        "installation_configuration",
+        "error_resolution",
+        "out_of_domain"
     ] = Field(
-        description="Categoría principal de la consulta sobre la documentación técnica."
+        description="Main category of the query about the technical documentation."
     )
     requires_search_documentation: bool = Field(
-        description="True si la pregunta requiere consultar la base RAG/documentación técnica."
+        description="True if the question requires querying the RAG/technical documentation base."
     )
     summary: str = Field(
-        description="Resumen breve y claro del objetivo de la pregunta en 1 o 2 oraciones."
+        description="Brief and clear summary of the question's goal in 1 or 2 sentences."
     )
 
 
@@ -26,8 +26,8 @@ def classify(text: str) -> IntentClassifierModel:
     """Transforma texto libre en un objeto IntentClassifierModel validado por Pydantic."""
     provider = get_provider()
     system_instruction = (
-        "Eres un clasificador experto de intenciones para un sistema RAG de documentación técnica. "
-        "Analiza la pregunta del usuario y extrae la información requerida de forma concisa."
+        "You are an expert intent classifier for a RAG system over technical documentation. "
+        "Analyze the user's question and extract the required information concisely."
     )
     return provider.generate_structured(
         prompt=text,

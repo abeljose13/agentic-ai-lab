@@ -1,0 +1,44 @@
+###DOCUMENT: Sistemas RAG - fundamentos
+Página 1 de 3
+
+RAG (Retrieval-Augmented Generation) combina un modelo de lenguaje con un sistema de recuperación de documentos.   Antes de responder, el sistema busca fragmentos relevantes en un corpus propio y los incluye en el prompt, de modo que la respuesta se apoye en información concreta y no solo en lo que el modelo memorizó durante el entrenamiento.
+
+
+
+El flujo de ingesta de un RAG suele tener cinco etapas:  extracción del texto, limpieza, chunking,  generación de embeddings y almacenamiento.  Cada etapa deja una huella en la calidad final: un texto mal extraído produce chunks con ruido, y un chunk demasiado largo diluye el significado que el embedding intenta capturar.
+Página 2 de 3
+La limpieza no es un detalle cosmético. Los PDF suelen traer encabezados repetidos, numeración de páginas, guiones de corte de palabra y caracteres invisibles como el espacio de no ruptura (\u00a0)\u200b. Además aparecen ligaduras tipográficas como ﬁ o ﬂ, y textos con mojibake, por ejemplo el apóstrofo mal codificado como â€™.
+
+En la estrategia de chunking por párrafos, cada chunk agrupa uno o más párrafos completos hasta un tamaño máximo.  Esto preserva la unidad de pensamiento que el autor escribió.  Si un párrafo supera el límite, conviene partirlo por oraciones y, como último recurso, por caracteres.
+
+
+Cada chunk debe viajar con su metadata: identificador del documento, identificador del chunk, posición dentro del documento, fuente original y fecha de ingesta.  Con esa información es posible responder de qué documento y de qué posición vino un fragmento recuperado, algo imprescindible para auditar respuestas y para citar fuentes.
+Página 3 de 3
+
+Un error frecuente es indexar sin trazabilidad: los vectores quedan guardados, pero al recuperar un chunk nadie sabe de dónde salió.   Otro error es ignorar la limpieza y medir la similitud con texto basura, lo que hace que chunks irrelevantes aparezcan entre los primeros resultados.
+
+###DOCUMENT: La fotosíntesis en las plantas
+Página 1 de 2
+
+La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias convierten la energía luminosa en energía química.   Ocurre principalmente en los cloroplastos, orgánulos que contienen clorofila, el pigmento que absorbe sobre todo la luz azul y la roja y refleja la verde, por eso vemos las hojas de ese color.
+
+Durante la fase luminosa, la energía de los fotones separa moléculas de agua y libera oxígeno como subproducto.  Esa energía se almacena temporalmente en ATP y NADPH.  En la fase oscura, también llamada ciclo de Calvin, el dióxido de carbono del aire se fija en moléculas orgánicas usando esas moléculas energéticas.
+Página 2 de 2
+El resultado final es la glucosa, que la planta usa como combustible y como material para construir celulosa, almidón y otras estructuras.  Parte de esa glucosa se convierte en sacarosa para transportarse por el floema hacia raíces, frutos y tejidos en crecimiento.
+
+
+La eficiencia del proceso depende de factores ambientales: la intensidad lumínica, la concentración de CO₂, la temperatura y la disponibilidad de agua.  Cuando la temperatura sube demasiado, la fotorrespiración aumenta y la planta pierde parte de lo que ya fijó.  Por eso los cultivos en invernadero controlan estas variables con cuidado.
+	Los científicos estudian la fotosíntesis también para mejorar cultivos.   Algunas líneas de investigación buscan variedades de arroz y trigo con un ciclo de Calvin más eficiente, lo que podría aumentar el rendimiento sin expandir la superficie cultivada.
+
+###DOCUMENT: Café de especialidad en Argentina
+Página 1 de 2
+
+El café de especialidad se define por una puntuación sensorial igual o superior a 80 puntos en la escala de la Specialty Coffee Association, lo que implica granos sin defectos y con un perfil de sabor distintivo.   En Argentina el consumo tradicional fue durante décadas el de café molido o instantáneo, pero en los últimos años crecieron las tostadurías boutique en Buenos Aires, Córdoba y Mendoza.
+
+El camino del grano hasta la taza tiene varias etapas: cosecha selectiva, beneficiado, secado, trilla, tueste y preparación.  Cada una puede arruinar un lote si no se controla.  El tueste, por ejemplo, transforma azúcares y aminoácidos en compuestos aromáticos; un tueste demasiado largo deja notas amargas y oculta el origen.
+Página 2 de 2
+Los baristas suelen medir la extracción con la relación entre la cantidad de café y el agua, la temperatura y la molienda.  Una molienda fina con agua muy caliente extrae de más, mientras que una molienda gruesa con agua fría deja un café ácido y aguado.  Por eso se recomienda registrar cada preparación y ajustar de a un parámetro por vez.
+
+
+Para el consumidor, leer la etiqueta es clave.  Conviene buscar el origen (país, región y finca), la altura de cultivo, la variedad, la fecha de tueste y el método de procesado.  Una fecha de tueste de más de tres o cuatro meses suele indicar que el aroma ya se perdió.
+	El sector argentino todavía es pequeño, pero los productores de noreste y las tostadurías que trabajan con importación directa están abriendo un mercado con foco en la trazabilidad y en la experiencia de compra.

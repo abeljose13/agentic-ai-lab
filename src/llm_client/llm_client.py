@@ -51,11 +51,11 @@ class LLMClient:
     def _validate_parameters(self, temperature: float, max_tokens: int) -> None:
         """Valida que los parámetros de generación estén en rangos válidos antes de llamar a los SDKs."""
         if not (0.0 <= temperature <= 2.0):
-            raise ValueError(f"Parámetro 'temperature' inválido ({temperature}). Debe estar entre 0.0 y 2.0.")
+            raise ValueError(f"Invalid 'temperature' parameter ({temperature}). It must be between 0.0 and 2.0.")
         if max_tokens <= 0:
-            raise ValueError(f"Parámetro 'max_tokens' inválido ({max_tokens}). Debe ser un entero positivo mayor a 0.")
+            raise ValueError(f"Invalid 'max_tokens' parameter ({max_tokens}). It must be a positive integer greater than 0.")
 
-    def _execute_with_backoff(self, call_fn, *args, max_reintentos: int = 3, **kwargs) -> str:
+    def _execute_with_backoff(self, call_fn, *args, max_retries: int = 3, **kwargs) -> str:
         """
         Ejecuta la función de llamada al LLM aplicando el patrón Backoff Exponencial
         ante errores de Rate Limit o errores de red.
@@ -63,17 +63,17 @@ class LLMClient:
         Los errores no transitorios (validación, errores de programación, etc.)
         se relanzan inmediatamente sin reintentar.
         """
-        for intento in range(max_reintentos):
+        for attempt in range(max_retries):
             try:
                 return call_fn(*args, **kwargs)
             except TRANSIENT_ERRORS as err:
                 # Si es el último intento, lanzar un error claro al usuario
-                if intento == max_reintentos - 1:
-                    raise RuntimeError(f"Error persistente tras {max_reintentos} intentos con {self.provider}: {str(err)}") from err
+                if attempt == max_retries - 1:
+                    raise RuntimeError(f"Persistent error after {max_retries} attempts with {self.provider}: {str(err)}") from err
 
-                espera = 2 ** intento  # Backoff exponencial: 1s, 2s, 4s...
-                print(f"[Rate Limit / Error en {self.provider}] Reintentando (intento {intento + 1}/{max_reintentos}) en {espera}s... Detalle: {err}")
-                time.sleep(espera)
+                wait_seconds = 2 ** attempt  # Backoff exponencial: 1s, 2s, 4s...
+                print(f"[Rate Limit / Error in {self.provider}] Retrying (attempt {attempt + 1}/{max_retries}) in {wait_seconds}s... Detail: {err}")
+                time.sleep(wait_seconds)
             except Exception:
                 # Errores no reintentables (ValueError, TypeError, etc.): propagar tal cual
                 raise
@@ -97,8 +97,8 @@ class LLMClient:
         call_fn = providers_map.get(self.provider)
         if not call_fn:
             raise ValueError(
-                f"Proveedor '{self.provider}' no soportado. "
-                f"Opciones válidas: {list(providers_map.keys())}"
+                f"Provider '{self.provider}' is not supported. "
+                f"Valid options: {list(providers_map.keys())}"
             )
 
         # Ejecutar la llamada envuelta en el patrón de backoff exponencial
@@ -119,9 +119,9 @@ class LLMClient:
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Mapear cada prompt a una ejecución individual de self.generate
-            resultados = list(executor.map(self.generate, prompts))
-        
-        return resultados
+            results = list(executor.map(self.generate, prompts))
+
+        return results
 
     # =========================================================================
     # IMPLEMENTACIÓN DE PROVEEDORES
@@ -131,7 +131,7 @@ class LLMClient:
         """Llamada usando el SDK oficial de OpenAI."""
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError("Falta la variable de entorno 'OPENAI_API_KEY' para el proveedor OpenAI.")
+            raise ValueError("Missing environment variable 'OPENAI_API_KEY' for the OpenAI provider.")
 
         import openai
         client = openai.OpenAI(api_key=api_key)
@@ -141,7 +141,7 @@ class LLMClient:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
 
-        print("Ejecutando llamada a OpenAI - GPT")
+        print("Calling OpenAI - GPT")
         response = client.chat.completions.create(
             model=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"),
             messages=messages,
@@ -154,7 +154,7 @@ class LLMClient:
         """Llamada usando el SDK oficial de Anthropic (Claude)."""
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
-            raise ValueError("Falta la variable de entorno 'ANTHROPIC_API_KEY' para el proveedor Anthropic.")
+            raise ValueError("Missing environment variable 'ANTHROPIC_API_KEY' for the Anthropic provider.")
 
         import anthropic
         client = anthropic.Anthropic(api_key=api_key)
@@ -168,7 +168,7 @@ class LLMClient:
         if system:
             extra_args["system"] = system
 
-        print("Ejecutando llamada a Anthropic - Claude")
+        print("Calling Anthropic - Claude")
         response = client.messages.create(
             model=model_name,
             max_tokens=max_tokens,
@@ -182,7 +182,7 @@ class LLMClient:
         """Llamada usando el nuevo SDK de Google GenAI (`google-genai`)."""
         api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         if not api_key:
-            raise ValueError("Falta la variable de entorno 'GEMINI_API_KEY' o 'GOOGLE_API_KEY' para el proveedor Google.")
+            raise ValueError("Missing environment variable 'GEMINI_API_KEY' or 'GOOGLE_API_KEY' for the Google provider.")
 
         from google import genai
         from google.genai import types
@@ -191,7 +191,7 @@ class LLMClient:
             api_key=api_key,
             http_options=types.HttpOptions(timeout=15000)
         )
-        
+
         config = types.GenerateContentConfig(
             temperature=temperature,
             max_output_tokens=max_tokens,
@@ -199,7 +199,7 @@ class LLMClient:
         )
 
         model_name = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
-        print("Ejecutando llamada a Google - Gemini")
+        print("Calling Google - Gemini")
         response = client.models.generate_content(
             model=model_name,
             contents=prompt,
@@ -211,7 +211,7 @@ class LLMClient:
         """Llamada usando el SDK oficial de Groq."""
         api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
-            raise ValueError("Falta la variable de entorno 'GROQ_API_KEY' para el proveedor Groq.")
+            raise ValueError("Missing environment variable 'GROQ_API_KEY' for the Groq provider.")
 
         import groq
         client = groq.Groq(api_key=api_key)
@@ -222,7 +222,7 @@ class LLMClient:
         messages.append({"role": "user", "content": prompt})
 
         model_name = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")
-        print("Ejecutando llamada a Groq")
+        print("Calling Groq")
         response = client.chat.completions.create(
             model=model_name,
             messages=messages,
@@ -253,7 +253,7 @@ class LLMClient:
         if system:
             payload["system"] = system
 
-        print("Ejecutando llamada a Ollama")
+        print("Calling Ollama")
         response = requests.post(f"{OLLAMA_BASE_URL}/api/generate", json=payload, timeout=60)
         response.raise_for_status()
         data = response.json()
@@ -274,14 +274,14 @@ class LLMClient:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
 
-        print("Ejecutando llamada a Ollama")
+        print("Calling Ollama")
         response = llm.invoke(messages)
 
         return response.content.strip()
 
     def get_client_llm(self, temperature: float, max_tokens: int, ollama_url: str, model: str):
-        """ 
-        Crea un cliente para consumir un modelo en el servidor Ollama local. 
+        """
+        Crea un cliente para consumir un modelo en el servidor Ollama local.
         """
         return ChatOpenAI(
             base_url=ollama_url,
@@ -291,4 +291,3 @@ class LLMClient:
             top_p=0.9,
             max_tokens=max_tokens
         )
-        

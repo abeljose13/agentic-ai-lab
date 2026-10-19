@@ -15,3 +15,6 @@ wheels/
 
 # txt
 txt/
+
+# embeddings
+embeddings/

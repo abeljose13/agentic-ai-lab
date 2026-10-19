@@ -21,9 +21,9 @@ def generate_with_retries(
     json_schema = json.dumps(schema_model.model_json_schema(), indent=2)
     structured_system_prompt = (
         f"{system + '\n\n' if system else ''}"
-        f"DEBES responder EXCLUSIVAMENTE con un JSON válido que cumpla estrictamente "
-        f"con el siguiente esquema JSON Schema:\n{json_schema}\n"
-        f"No incluyas formateo markdown extra ni explicaciones fuera del JSON."
+        f"You MUST respond EXCLUSIVELY with a valid JSON that strictly complies "
+        f"with the following JSON Schema:\n{json_schema}\n"
+        f"Do not include extra markdown formatting or explanations outside the JSON."
     )
 
     last_error = None
@@ -33,10 +33,10 @@ def generate_with_retries(
         current_prompt = prompt
         if attempt > 0:
             current_prompt = (
-                f"{prompt}\n\n[ATENCIÓN]: Tu intento anterior falló en la validación.\n"
-                f"Respuesta previa: {last_response}\n"
-                f"Error de validación: {last_error}\n"
-                f"Por favor corrige la respuesta para que cumpla estrictamente el esquema."
+                f"{prompt}\n\n[ATTENTION]: Your previous attempt failed validation.\n"
+                f"Previous response: {last_response}\n"
+                f"Validation error: {last_error}\n"
+                f"Please correct the response so that it strictly complies with the schema."
             )
 
         raw_text = generate_fn(prompt=current_prompt, system=structured_system_prompt)
@@ -79,4 +79,3 @@ class LLMProvider(ABC):
         Aplica para proveedores sin API nativa de Structured Outputs.
         """
         return generate_with_retries(self.generate, prompt, schema_model, system=system)
-    

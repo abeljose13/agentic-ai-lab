@@ -33,5 +33,7 @@ uv run python tests/test_llm_client.py        # basic client smoke script
 
 ## Conventions
 
-- Docstrings, comments, and prompts are in Spanish; keep that style.
+- Comments (single- and multi-line) and docstrings are in Spanish; keep that style.
+- Everything else is in English: identifiers (variables, constants, classes, functions, fields), print/log/error messages, and LLM prompts and schema descriptions.
+- Exception: corpus content and sample user inputs (data, not code) stay in their original language.
 - Anthropic path clamps temperature to [0.0, 1.0]; general validation allows 0.0–2.0 — don't "fix" the clamp.
