@@ -20,4 +20,10 @@ dependencies = [
     "pydantic>=2.13.5",
     "python-dotenv>=1.2.4",
     "requests>=2.34.2",
+    "chromadb>=1.1.0",
 ]
+
+[tool.uv]
+# chromadb depende de onnxruntime, que ya no publica wheels para macOS Intel:
+# fijamos la ultima version con wheel macosx x86_64 (no lo usamos directamente).
+constraint-dependencies = ["onnxruntime<1.24"]

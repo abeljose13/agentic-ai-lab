@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 
 # Proveedores soportados por el laboratorio
-VALID_PROVIDERS = ("openai", "anthropic", "google", "ollama", "groq")
+VALID_PROVIDERS = ("openai", "anthropic", "google", "ollama", "groq", "openrouter")
 
 _env_loaded = False
 

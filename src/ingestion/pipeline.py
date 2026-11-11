@@ -4,7 +4,7 @@ from pathlib import Path
 from src.ingestion.chunking import DEFAULT_MAX_CHARS, Chunk, build_chunks
 from src.ingestion.cleaning import clean_text
 from src.ingestion.corpus import Document
-from src.ingestion.embeddings import EmbedFn, get_embed_fn
+from src.ingestion.embeddings import EmbedFn, get_embed_fn, get_embed_model
 from src.ingestion.storage import save_embeddings
 from src.llm_client.config import get_provider_name
 
@@ -40,13 +40,16 @@ def run_ingestion(documents: list[Document], embed_fn: EmbedFn | None = None,
     if embed_fn is None:
         embed_fn = get_embed_fn()
         provider = get_provider_name()
+        model = get_embed_model(provider)
     else:
+        # Función externa: no sabemos qué modelo la implementa.
         provider = "custom"
+        model = None
 
     vectors = embed_fn([c.text for c in chunks])
 
     path = None
     if save:
-        path = save_embeddings(chunks, vectors, provider, directory)
+        path = save_embeddings(chunks, vectors, provider, directory, model=model)
 
     return {"path": path, "chunks": chunks, "vectors": vectors}

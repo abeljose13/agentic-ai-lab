@@ -17,9 +17,11 @@ uv run python tests/test_llm_client.py        # basic client smoke script
 
 - Scripts make **live LLM API calls** (real requests, real cost) unless provider is `ollama`. Never invoke them as a routine verification step.
 - A local `.env` (gitignored) supplies keys; template in `.env.example`.
-- `LLM_PROVIDER` selects the backend. Valid values: `openai | anthropic | google | ollama | groq`. Note: `.env.example` says `gemini`, which is **not** a valid value — use `google` (code default is `google`).
-- Google key is read from `GEMINI_API_KEY` or `GOOGLE_API_KEY`. Other providers use `<NAME>_API_KEY`. Model overrides: `OPENAI_MODEL`, `ANTHROPIC_MODEL`, `GEMINI_MODEL`, `GROQ_MODEL`, `OLLAMA_MODEL`.
+- `LLM_PROVIDER` selects the backend. Valid values: `openai | anthropic | google | ollama | groq | openrouter`. Note: `.env.example` says `gemini`, which is **not** a valid value — use `google` (code default is `google`).
+- Google key is read from `GEMINI_API_KEY` or `GOOGLE_API_KEY`. Other providers use `<NAME>_API_KEY`. Model overrides: `OPENAI_MODEL`, `ANTHROPIC_MODEL`, `GEMINI_MODEL`, `GROQ_MODEL`, `OLLAMA_MODEL`, `OPENROUTER_MODEL`.
 - `ollama` targets a LAN server (`MAC_SERVER_IP`/`OLLAMA_PORT`, default 192.168.1.14:11434) — unreachable unless that host is up.
+- `openrouter` uses the OpenAI-compatible API at `https://openrouter.ai/api/v1` (chat + embeddings) with `OPENROUTER_API_KEY`; generation model `OPENROUTER_MODEL`, embedding model `OPENROUTER_EMBEDDING_MODEL_ID`.
+- Embedding models per provider (used by `src/ingestion/embeddings.py`): `OPENAI_EMBEDDING_MODEL_ID`, `GOOGLE_EMBEDDING_MODEL_ID`, `OLLAMA_EMBEDDING_MODEL_ID`, `OPENROUTER_EMBEDDING_MODEL_ID`. `input_type` (`search_document`/`search_query`) is honored by google and openrouter; ollama and openai ignore it.
 
 ## Architecture
 

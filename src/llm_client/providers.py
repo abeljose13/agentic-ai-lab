@@ -53,6 +53,15 @@ class OllamaProvider(LLMProvider):
         return self.client.generate(prompt=prompt, system=system, temperature=temperature, max_tokens=max_tokens)
 
 
+class OpenRouterProvider(LLMProvider):
+    def __init__(self):
+        self.client = LLMClient()
+        self.client.provider = "openrouter"
+
+    def generate(self, prompt: str, system: str = None, temperature: float = 0.7, max_tokens: int = 500) -> str:
+        return self.client.generate(prompt=prompt, system=system, temperature=temperature, max_tokens=max_tokens)
+
+
 def get_provider() -> LLMProvider:
     """Factory: devuelve la instancia del proveedor configurado en LLM_PROVIDER."""
     providers = {
@@ -61,5 +70,6 @@ def get_provider() -> LLMProvider:
         "google": GoogleProvider,
         "groq": GroqProvider,
         "ollama": OllamaProvider,
+        "openrouter": OpenRouterProvider,
     }
     return providers[get_provider_name()]()

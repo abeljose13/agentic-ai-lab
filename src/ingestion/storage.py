@@ -10,10 +10,11 @@ EMBEDDINGS_DIR = PROJECT_ROOT / "embeddings"
 
 
 def save_embeddings(chunks: list[Chunk], vectors: list[list[float]], provider: str,
-                    directory: Path | None = None) -> Path:
+                    directory: Path | None = None, model: str | None = None) -> Path:
     """
     Guarda chunks, vectores y el índice chunk_id -> (document_id, position, source)
     en un JSON <run_id>_<fecha>.json dentro de /embeddings.
+    `model` identifica el modelo de embeddings que generó los vectores (None si es desconocido).
     Migración futura: este JSON se reemplazará por un vector store real.
     """
     if len(chunks) != len(vectors):
@@ -30,6 +31,7 @@ def save_embeddings(chunks: list[Chunk], vectors: list[list[float]], provider: s
         "run_id": run_id,
         "created_at": created.isoformat(),
         "provider": provider,
+        "model": model,
         "total_chunks": len(chunks),
         "chunks": [{**c.to_dict(), "vector": v} for c, v in zip(chunks, vectors)],
         "index": {

@@ -43,6 +43,9 @@ if groq is not None:
     _TRANSIENT_ERRORS += [groq.RateLimitError, groq.APIConnectionError, groq.APITimeoutError]
 TRANSIENT_ERRORS = tuple(_TRANSIENT_ERRORS)
 
+# Endpoint OpenAI-compatible de OpenRouter (chat y embeddings)
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
 
 class LLMClient:
     def __init__(self):
@@ -92,6 +95,7 @@ class LLMClient:
             "google": self.call_google,
             "ollama": self.call_ollama,
             "groq": self.call_groq,
+            "openrouter": self.call_openrouter,
         }
 
         call_fn = providers_map.get(self.provider)
@@ -230,6 +234,39 @@ class LLMClient:
             max_tokens=max_tokens,
         )
         return response.choices[0].message.content.strip()
+
+    def call_openrouter(self, prompt: str, system: Optional[str], temperature: float, max_tokens: int) -> str:
+        """Llamada a OpenRouter mediante su API OpenAI-compatible (chat/completions)."""
+        api_key = os.environ.get("OPENROUTER_API_KEY")
+        if not api_key:
+            raise ValueError("Missing environment variable 'OPENROUTER_API_KEY' for the OpenRouter provider.")
+
+        import openai
+        client = openai.OpenAI(api_key=api_key, base_url=OPENROUTER_BASE_URL)
+
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        model_name = os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+        print("Calling OpenRouter")
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        content = response.choices[0].message.content
+        # Modelos de razonamiento pueden devolver content=None (todo el presupuesto se
+        # consume en reasoning): fallar con mensaje claro en vez de AttributeError.
+        if not content or not content.strip():
+            raise RuntimeError(
+                f"Model '{model_name}' returned no content (reasoning models spend the "
+                f"max_tokens budget on reasoning). Increase max_tokens or use a "
+                f"non-reasoning model."
+            )
+        return content.strip()
 
     def call_ollama_rest(self, prompt: str, system: Optional[str], temperature: float, max_tokens: int) -> str:
         """Llamada a servidor Ollama local mediante peticiones HTTP/REST."""
