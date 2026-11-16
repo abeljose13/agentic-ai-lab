@@ -18,7 +18,76 @@ MODEL_THRESHOLDS: dict[str, float] = {
     # Calibración 2026-11-02: rangos solapados (Calvin 0.40 vs backup 0.46). Corte
     # conservador: preserva las 5 en dominio; el backup de BD pasa (1 falso positivo).
     "bge-m3": 0.40,
+    # Calibración 2026-11-16 con gemini-embedding-2 (5 en dominio + 4 fuera de dominio).
+    # worst in-domain top-1 = 0.637, best out-of-domain top-1 = 0.546 -> corte en el punto medio.
+    "gemini-embedding-2": 0.592,
 }
+
+
+def _guard_embedding_model(collection) -> str:
+    """Verifica que el modelo configurado coincida con el de la colección y lo devuelve."""
+    stored_model = collection_embedding_model(collection)
+    configured_model = get_embed_model()
+    if stored_model != configured_model:
+        raise ValueError(
+            f"Corpus was embedded with '{stored_model}' but the configured model is "
+            f"'{configured_model}'. Re-run ingestion with the configured model (the collection "
+            f"is rebuilt automatically) or set the embedding model back to '{stored_model}'."
+        )
+    return stored_model
+
+
+def _resolve_threshold(stored_model: str, similarity_threshold: float | None) -> float:
+    """Resuelve el umbral efectivo: el explícito o el calibrado para el modelo del índice."""
+    if similarity_threshold is not None:
+        return similarity_threshold
+    if stored_model not in MODEL_THRESHOLDS:
+        raise ValueError(
+            f"No calibrated similarity threshold for model '{stored_model}'. Run "
+            f"tests/calibrate_threshold.py and add it to MODEL_THRESHOLDS, or pass "
+            f"similarity_threshold explicitly."
+        )
+    return MODEL_THRESHOLDS[stored_model]
+
+
+def search_with_details(query: str, collection, k: int = 3,
+                        similarity_threshold: float | None = None,
+                        where: dict = None) -> dict:
+    """Busca los k chunks más relevantes y expone el resultado completo.
+
+    Devuelve un dict con:
+      - "hits": lista filtrada por encima del umbral (misma forma que `search()`).
+      - "raw_hits": los k resultados brutos de ChromaDB, incluidos los que quedan
+        por debajo del umbral.
+      - "threshold": umbral efectivo aplicado.
+    """
+    stored_model = _guard_embedding_model(collection)
+    threshold = _resolve_threshold(stored_model, similarity_threshold)
+
+    # Embeber la consulta con input_type="search_query". Los proveedores que no distinguen
+    # el tipo (Ollama, OpenAI) lo ignoran; Google lo mapea a RETRIEVAL_QUERY.
+    embed_fn = get_embed_fn()
+    query_vector = embed_fn([query], input_type="search_query")[0]
+
+    # Consultar la colección (n_results=k, where=where).
+    result = collection.query(query_embeddings=[query_vector], n_results=k, where=where)
+
+    # La colección usa métrica coseno: distancia = 1 - similitud (más alto = más parecido).
+    raw_hits = []
+    hits = []
+    for chunk_id, text, distance, metadata in zip(
+        result["ids"][0],
+        result["documents"][0],
+        result["distances"][0],
+        result["metadatas"][0],
+    ):
+        similarity = 1.0 - distance
+        hit = {"chunk_id": chunk_id, "text": text, "similarity": similarity, "metadata": metadata}
+        raw_hits.append(hit)
+        if similarity >= threshold:
+            hits.append(hit)
+
+    return {"hits": hits, "raw_hits": raw_hits, "threshold": threshold}
 
 
 def search(query: str, collection, k: int = 3, similarity_threshold: float | None = None,
@@ -33,43 +102,5 @@ def search(query: str, collection, k: int = 3, similarity_threshold: float | Non
     Devuelve una lista de dicts (ordenados de más a menos similar) con al menos
     {"chunk_id", "text", "similarity", "metadata"}.
     """
-    # Guard: la consulta debe embeberse con el mismo modelo que los vectores del corpus.
-    stored_model = collection_embedding_model(collection)
-    configured_model = get_embed_model()
-    if stored_model != configured_model:
-        raise ValueError(
-            f"Corpus was embedded with '{stored_model}' but the configured model is "
-            f"'{configured_model}'. Re-run ingestion with the configured model (the collection "
-            f"is rebuilt automatically) or set the embedding model back to '{stored_model}'."
-        )
-
-    if similarity_threshold is None:
-        if stored_model not in MODEL_THRESHOLDS:
-            raise ValueError(
-                f"No calibrated similarity threshold for model '{stored_model}'. Run "
-                f"tests/calibrate_threshold.py and add it to MODEL_THRESHOLDS, or pass "
-                f"similarity_threshold explicitly."
-            )
-        similarity_threshold = MODEL_THRESHOLDS[stored_model]
-
-    # Embeber la consulta con input_type="search_query". Los proveedores que no distinguen
-    # el tipo (Ollama, OpenAI) lo ignoran; Google lo mapea a RETRIEVAL_QUERY.
-    embed_fn = get_embed_fn()
-    query_vector = embed_fn([query], input_type="search_query")[0]
-
-    # Consultar la colección (n_results=k, where=where).
-    result = collection.query(query_embeddings=[query_vector], n_results=k, where=where)
-
-    # La colección usa métrica coseno: distancia = 1 - similitud (más alto = más parecido).
-    hits = []
-    for chunk_id, text, distance, metadata in zip(
-        result["ids"][0],
-        result["documents"][0],
-        result["distances"][0],
-        result["metadatas"][0],
-    ):
-        similarity = 1.0 - distance
-        if similarity < similarity_threshold:
-            continue
-        hits.append({"chunk_id": chunk_id, "text": text, "similarity": similarity, "metadata": metadata})
-    return hits
+    return search_with_details(query, collection, k=k, similarity_threshold=similarity_threshold,
+                               where=where)["hits"]

@@ -30,9 +30,9 @@ GOOGLE_TASK_TYPES = {"search_document": "RETRIEVAL_DOCUMENT", "search_query": "R
 # Modelo por defecto y variable de entorno que lo sobreescribe, por proveedor.
 EMBED_MODEL_SETTINGS = {
     "openai": ("OPENAI_EMBEDDING_MODEL_ID", "text-embedding-3-large"),
-    "google": ("GOOGLE_EMBEDDING_MODEL_ID", "gemini-embedding-001"),
+    "google": ("GOOGLE_EMBEDDING_MODEL_ID", "gemini-embedding-2"),
     "ollama": ("OLLAMA_EMBEDDING_MODEL_ID", "bge-m3"),
-    "openrouter": ("OPENROUTER_EMBEDDING_MODEL_ID", "nvidia/llama-nemotron-embed-vl-1b-v2:free"),
+    "openrouter": ("OPENROUTER_EMBEDDING_MODEL_ID", "nemotron-3.5-embed-8b:free"),
 }
 
 
@@ -56,7 +56,12 @@ def embed_openai(texts: list[str], input_type: str = "search_document") -> list[
 
 
 def embed_google(texts: list[str], input_type: str = "search_document") -> list[list[float]]:
-    """Embeddings con Google GenAI (`google-genai`). input_type se traduce a task_type."""
+    """Embeddings con Google GenAI (`google-genai`). input_type se traduce a task_type.
+
+    Algunos modelos de Google (por ejemplo gemini-embedding-2) devuelven un único vector
+    aunque se les pase una lista de textos. Por eso se embebe de a un texto y se devuelve
+    un vector por texto, garantizando la correspondencia 1:1.
+    """
     from google import genai
     from google.genai import types
 
@@ -64,12 +69,16 @@ def embed_google(texts: list[str], input_type: str = "search_document") -> list[
     if not api_key:
         raise ValueError("Missing 'GEMINI_API_KEY' or 'GOOGLE_API_KEY' for Google embeddings.")
     client = genai.Client(api_key=api_key)
-    response = client.models.embed_content(
-        model=os.environ.get(*EMBED_MODEL_SETTINGS["google"]),
-        contents=texts,
-        config=types.EmbedContentConfig(task_type=GOOGLE_TASK_TYPES[input_type]),
-    )
-    return [e.values for e in response.embeddings]
+    model = os.environ.get(*EMBED_MODEL_SETTINGS["google"])
+    config = types.EmbedContentConfig(task_type=GOOGLE_TASK_TYPES[input_type])
+
+    vectors = []
+    for text in texts:
+        response = client.models.embed_content(model=model, contents=[text], config=config)
+        if not response.embeddings:
+            raise RuntimeError(f"Google returned no embeddings for text: {text[:80]!r}")
+        vectors.append(response.embeddings[0].values)
+    return vectors
 
 
 def embed_ollama(texts: list[str], input_type: str = "search_document") -> list[list[float]]:
@@ -101,7 +110,7 @@ def embed_openrouter(texts: list[str], input_type: str = "search_document") -> l
         f"{OPENROUTER_BASE_URL}/embeddings",
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         json=payload,
-        timeout=120,
+        timeout=300,
     )
     if response.status_code in _RETRYABLE_HTTP_STATUS:
         raise ProviderTransientError(f"OpenRouter returned HTTP {response.status_code}: {response.text[:200]}")
