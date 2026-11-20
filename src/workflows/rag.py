@@ -77,21 +77,26 @@ def _format_context(hits: list[dict]) -> str:
 def _select_context_hits(hits: list[dict], max_characters: int) -> tuple[list[dict], list[str]]:
     """Selecciona chunks enteros en orden hasta no superar el presupuesto de caracteres.
 
-    Devuelve (chunks_seleccionados, ids_descartados).
+    Si el primer bloque supera el presupuesto, recorta su texto para que también quepa
+    la metadata de trazabilidad. Devuelve (chunks_seleccionados, ids_descartados).
     """
     selected: list[dict] = []
     discarded: list[str] = []
-    total = 0
     for hit in hits:
-        block = _format_context([hit])
-        if total + len(block) > max_characters and selected:
-            # No cabe y ya tenemos al menos un chunk: descartar el resto.
-            discarded.append(hit["chunk_id"])
+        candidate = selected + [hit]
+        if len(_format_context(candidate)) <= max_characters:
+            selected.append(hit)
             continue
-        selected.append(hit)
-        total += len(block)
-        if total >= max_characters:
-            break
+
+        if not selected:
+            # Reserva primero el espacio de la metadata y recorta solo el texto.
+            empty_hit = {**hit, "text": ""}
+            text_budget = max_characters - len(_format_context([empty_hit]))
+            if text_budget > 0:
+                selected.append({**hit, "text": hit["text"][:text_budget]})
+                continue
+
+        discarded.append(hit["chunk_id"])
     return selected, discarded
 
 

@@ -1,7 +1,7 @@
 """
 Calibración del umbral de similitud para el buscador semántico (Clase 5).
 
-Corre un benchmark de consultas (3 en dominio + 4 fuera de dominio) contra el
+Corre un benchmark de consultas en dominio y fuera de dominio contra el
 índice vigente sin umbral, mide la similitud del top-1 de cada consulta y sugiere
 un corte. El valor elegido se registra en MODEL_THRESHOLDS (src/search/searcher.py),
 que search() usa como default para ese modelo.
@@ -26,6 +26,9 @@ IN_DOMAIN_QUERIES = [
     ("¿Qué errores arruinan un lote de café durante el tueste?", "cafe-de-especialidad-en-argentina"),
     ("¿Para qué sirve el floema en las plantas?", "la-fotosintesis-en-las-plantas"),
     ("¿Qué es el ciclo de Calvin?", "la-fotosintesis-en-las-plantas"),
+    ("¿Cómo convierten los paneles solares la luz en electricidad?", "energia-solar-fotovoltaica"),
+    ("¿Qué ocurre con el agua después de que se infiltra en el suelo?", "ciclo-del-agua-y-gestion-hidrica"),
+    ("¿Cómo ayudan las abejas a producir frutos y semillas?", "apicultura-y-polinizacion"),
 ]
 
 # Fuera de dominio, a propósito: un umbral bien calibrado las filtra.
@@ -57,6 +60,9 @@ def main() -> int:
         assert hits, f"No results at all for in-domain query: '{query}'"
         top1 = hits[0]
         ok = any(h["metadata"]["document_id"] == expected_document_id for h in hits)
+        assert ok, (
+            f"Expected document '{expected_document_id}' not found in top-3 for query: '{query}'"
+        )
         in_domain_top1.append(top1["similarity"])
         sims = ", ".join(f"{h['similarity']:.3f}" for h in hits)
         print(f"  {query}\n    top-3 sims: {sims}  | expected doc in results: {'YES' if ok else 'NO!'}")

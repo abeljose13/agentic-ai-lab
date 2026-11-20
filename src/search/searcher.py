@@ -15,9 +15,9 @@ MODEL_THRESHOLDS: dict[str, float] = {
     # Calibración 2026-11-02 (5 consultas en dominio + 4 fuera): separación limpia
     # (en dominio 0.25-0.46 vs fuera de dominio <=0.19), corte en el punto medio.
     "nvidia/llama-nemotron-embed-vl-1b-v2:free": 0.22,
-    # Calibración 2026-11-02: rangos solapados (Calvin 0.40 vs backup 0.46). Corte
-    # conservador: preserva las 5 en dominio; el backup de BD pasa (1 falso positivo).
-    "bge-m3": 0.40,
+    # Calibración 2026-11-20 (8 consultas en dominio + 4 fuera): separación limpia
+    # (worst in-domain 0.464 vs best out-of-domain 0.458), corte en el punto medio.
+    "bge-m3": 0.461,
     # Calibración 2026-11-16 con gemini-embedding-2 (5 en dominio + 4 fuera de dominio).
     # worst in-domain top-1 = 0.637, best out-of-domain top-1 = 0.546 -> corte en el punto medio.
     "gemini-embedding-2": 0.592,

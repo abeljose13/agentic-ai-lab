@@ -28,8 +28,8 @@ def fake_embed(texts: list[str]) -> list[list[float]]:
 
 def test_corpus_meets_requirements():
     docs = load_corpus()
-    assert len(docs) == 3, f"Expected 3 documents, found {len(docs)}"
-    assert len({d.name for d in docs}) == 3, "Names must be distinct"
+    assert len(docs) == 6, f"Expected 6 documents, found {len(docs)}"
+    assert len({d.name for d in docs}) == 6, "Names must be distinct"
     for d in docs:
         assert len(d.text) <= 6000, f"'{d.name}' exceeds 6000 characters"
         paragraphs = [p for p in d.text.split("\n\n") if p.strip()]

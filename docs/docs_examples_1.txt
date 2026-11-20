@@ -42,3 +42,39 @@ Los baristas suelen medir la extracción con la relación entre la cantidad de c
 
 Para el consumidor, leer la etiqueta es clave.  Conviene buscar el origen (país, región y finca), la altura de cultivo, la variedad, la fecha de tueste y el método de procesado.  Una fecha de tueste de más de tres o cuatro meses suele indicar que el aroma ya se perdió.
 	El sector argentino todavía es pequeño, pero los productores de noreste y las tostadurías que trabajan con importación directa están abriendo un mercado con foco en la trazabilidad y en la experiencia de compra.
+
+###DOCUMENT: Energía solar fotovoltaica
+Página 1 de 2
+
+La energía solar fotovoltaica convierte la luz del sol en electricidad mediante celdas fabricadas con materiales semiconductores, generalmente silicio. Cuando los fotones inciden sobre una celda, liberan electrones y generan una corriente continua. Varias celdas conectadas forman un módulo, y varios módulos componen un panel solar.
+
+La cantidad de electricidad producida depende de la radiación recibida, la orientación e inclinación de los paneles y la temperatura. Las sombras de árboles, edificios o antenas pueden reducir el rendimiento, incluso si cubren solo una parte del sistema. Por eso, antes de instalarlo se estudia el recorrido del sol y se identifican obstáculos a lo largo del año.
+Página 2 de 2
+
+Un inversor transforma la corriente continua de los paneles en corriente alterna, que es la que utilizan la mayoría de los equipos domésticos. En una instalación conectada a la red, la energía que sobra puede inyectarse a la compañía eléctrica según las normas locales. En un sistema aislado, las baterías guardan electricidad para usarla durante la noche o en días nublados.
+
+El diseño también considera el consumo del edificio, la capacidad del cableado, la ventilación de los equipos y las condiciones de mantenimiento. Limpiar los módulos cuando acumulan polvo y revisar periódicamente las conexiones ayuda a conservar su rendimiento. Una estimación realista compara la producción esperada durante el año con los hábitos de consumo, no solo con la potencia máxima indicada en la etiqueta.
+
+###DOCUMENT: Ciclo del agua y gestión hídrica
+Página 1 de 2
+
+El ciclo del agua describe el movimiento continuo del agua entre la superficie terrestre, los océanos y la atmósfera. El calor del sol provoca la evaporación de ríos, lagos y mares; las plantas también liberan vapor mediante la transpiración. Al ascender y enfriarse, ese vapor se condensa en gotas que forman las nubes.
+
+Cuando las gotas crecen, el agua vuelve a la superficie como precipitación, en forma de lluvia, nieve o granizo. Una parte se infiltra en el suelo y recarga acuíferos, mientras otra circula por la superficie hacia arroyos y ríos. La proporción depende de la pendiente, el tipo de suelo, la vegetación y la intensidad de la lluvia.
+Página 2 de 2
+
+Una cuenca hidrográfica reúne las tierras cuyas aguas drenan hacia un mismo río, lago o desembocadura. Las decisiones tomadas en una zona de la cuenca pueden afectar la calidad y disponibilidad del agua en otras comunidades. La gestión hídrica considera tanto el agua superficial como las reservas subterráneas y coordina su uso entre hogares, agricultura e industria.
+
+La conservación de humedales, bosques ribereños y suelos permeables reduce la erosión y ayuda a moderar las inundaciones. En las ciudades, los pavimentos permeables y los espacios verdes permiten que más lluvia se infiltre en lugar de escurrir rápidamente por las calles. Medir el consumo, reparar pérdidas y proteger las fuentes de agua son acciones complementarias para afrontar períodos de sequía.
+
+###DOCUMENT: Apicultura y polinización
+Página 1 de 2
+
+Las abejas visitan flores para recolectar néctar y polen. Mientras se desplazan entre plantas, transportan granos de polen y favorecen la fecundación de muchas especies vegetales. Este proceso, llamado polinización, contribuye a la formación de frutos y semillas y sostiene tanto ecosistemas naturales como diversos cultivos.
+
+En una colonia de abejas melíferas conviven una reina, obreras y zánganos. Las obreras realizan tareas que cambian con la edad: limpian celdas, alimentan larvas, construyen panales, defienden la entrada y buscan alimento. La colonia almacena miel como reserva energética y polen como fuente de proteínas para criar nuevas abejas.
+Página 2 de 2
+
+La apicultura consiste en cuidar colmenas y cosechar sus productos sin comprometer la supervivencia de la colonia. El apicultor observa la cantidad de cría, las reservas de alimento y la presencia de parásitos, y elige momentos adecuados para revisar los cuadros. Una cosecha responsable deja alimento suficiente y evita intervenciones innecesarias durante períodos de frío o escasez de flores.
+
+La disponibilidad de flores durante distintas estaciones y el acceso a agua limpia influyen en la salud de las abejas. La diversidad de plantas nativas ofrece alimento a lo largo del año, mientras que el uso cuidadoso de pesticidas reduce la exposición de los polinizadores. Proteger setos, jardines y bordes de cultivo beneficia a las abejas y a otros insectos que cumplen funciones similares.

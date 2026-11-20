@@ -1,7 +1,7 @@
 """
 Validación manual del pipeline RAG integrado (Clase 6).
 
-Ejecuta 4 preguntas reales sobre el corpus indexado, imprime respuestas y verifica
+Ejecuta 7 preguntas reales sobre el corpus indexado, imprime respuestas y verifica
 mecánicamente que el contexto no desborde el presupuesto y que las citas resuelvan
 a chunks reales. Hace llamadas reales de embeddings y LLM según LLM_PROVIDER.
 
@@ -17,16 +17,18 @@ from src.search.chroma_store import build_or_open_collection, collection_embeddi
 from src.search.searcher import MODEL_THRESHOLDS
 from src.workflows.rag import NO_EVIDENCE_MESSAGE, rag
 
-# Cuatro preguntas de prueba: 2 en dominio, 1 ambigua, 1 fuera de dominio.
+# Preguntas de prueba: en dominio, ambigua y fuera de dominio.
 TEST_QUESTIONS = [
-    # Buena respuesta esperada: RAG.
-    "¿Cuáles son las etapas de la ingesta de un sistema RAG?",
-    # Buena respuesta esperada: fotosíntesis.
-    "¿Qué papel juega la clorofila en la fotosíntesis?",
+    # (pregunta, document_id esperado o None, debe abstenerse)
+    ("¿Cuáles son las etapas de la ingesta de un sistema RAG?", "sistemas-rag-fundamentos", False),
+    ("¿Qué papel juega la clorofila en la fotosíntesis?", "la-fotosintesis-en-las-plantas", False),
     # Ambigua: "temperatura" aparece en fotosíntesis y en preparación de café.
-    "¿Qué papel juega la temperatura?",
+    ("¿Qué papel juega la temperatura?", None, False),
+    ("¿Cómo convierten los paneles solares la luz en electricidad?", "energia-solar-fotovoltaica", False),
+    ("¿Qué ocurre con el agua después de que se infiltra en el suelo?", "ciclo-del-agua-y-gestion-hidrica", False),
+    ("¿Cómo ayudan las abejas a producir frutos y semillas?", "apicultura-y-polinizacion", False),
     # Fuera de dominio: no está en el corpus.
-    "¿Cómo se hace un backup de la base de datos?",
+    ("¿Cómo se hace un backup de la base de datos?", None, True),
 ]
 
 
@@ -77,7 +79,7 @@ def main() -> int:
     print(f"Collection: {collection.count()} chunks from {run_path.name}\n")
 
     passed = 0
-    for i, question in enumerate(TEST_QUESTIONS, start=1):
+    for i, (question, expected_document_id, should_abstain) in enumerate(TEST_QUESTIONS, start=1):
         result = rag(
             query=question,
             collection=collection,
@@ -93,7 +95,7 @@ def main() -> int:
         check_sources_are_real(result, collection)
 
         # Criterios específicos por tipo de pregunta.
-        if i == 4:
+        if should_abstain:
             # Fuera de dominio: debe abstenerse.
             assert result.no_evidence, "Out-of-domain question should produce no_evidence"
             assert result.response == NO_EVIDENCE_MESSAGE, "Out-of-domain response must be the no-evidence message"
@@ -102,6 +104,10 @@ def main() -> int:
             # En dominio / ambigua: respuesta sustantiva con al menos una cita real.
             assert not result.no_evidence, f"Expected an answer for question {i}"
             assert result.sources, f"Question {i} must cite at least one real chunk"
+            if expected_document_id is not None:
+                assert any(s["document_id"] == expected_document_id for s in result.sources), (
+                    f"Question {i} did not cite expected document '{expected_document_id}'"
+                )
 
         passed += 1
 

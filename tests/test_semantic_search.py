@@ -2,7 +2,7 @@
 Test en vivo del buscador semántico (Clase 5) sobre el índice ChromaDB.
 
 Carga los chunks + embeddings del laboratorio previo (JSON en /embeddings) a una
-colección persistente, ejecuta 4 consultas de prueba (3 en dominio + 1 fuera de
+colección persistente, ejecuta consultas de prueba (6 en dominio + 1 fuera de
 dominio a propósito), verifica la persistencia del índice y demuestra el filtro
 por metadata. Embebe las consultas con el proveedor de LLM_PROVIDER (llamadas
 reales, mismo modelo que generó los vectores del corpus).
@@ -30,6 +30,9 @@ TEST_QUERIES = [
     ("¿Cuáles son las etapas de la ingesta de un sistema RAG?", "sistemas-rag-fundamentos"),
     ("¿Qué papel juega la clorofila en la fotosíntesis?", "la-fotosintesis-en-las-plantas"),
     ("¿Qué errores arruinan un lote de café durante el tueste?", "cafe-de-especialidad-en-argentina"),
+    ("¿Cómo convierten los paneles solares la luz en electricidad?", "energia-solar-fotovoltaica"),
+    ("¿Qué ocurre con el agua después de que se infiltra en el suelo?", "ciclo-del-agua-y-gestion-hidrica"),
+    ("¿Cómo ayudan las abejas a producir frutos y semillas?", "apicultura-y-polinizacion"),
     # Fuera de dominio, a propósito: debe devolver pocos o ningún resultado gracias al umbral.
     ("¿Cómo se hace un backup de la base de datos?", None),
 ]
@@ -75,6 +78,7 @@ def main() -> int:
         else:
             # Criterio 2: consulta fuera de dominio -> pocos o ningún resultado (no 3 forzados).
             print(f"  -> out-of-domain query returned {len(hits)} results above threshold\n")
+            assert len(hits) <= 1, "Out-of-domain query returned too many results above threshold"
 
     # Paso 3: persistencia del índice — reabrir la colección sin re-embeber nada.
     new_client = chromadb.PersistentClient(path=str(CHROMA_DIR))
